@@ -7,32 +7,34 @@ export default async function handler(req, res) {
     const { text } = req.body;
 
     if (!text) {
-      return res.status(400).json({ error: "No text provided" });
+      return res.status(400).json({ error: "Text is required" });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
 
+    if (!apiKey) {
+      return res.status(500).json({ error: "Gemini API key not found" });
+    }
+
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" +
+        apiKey,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           contents: [
             {
               parts: [
                 {
-                  text: `You are a medical lab report interpreter.
-Explain the following lab report in very simple language for a general public user.
-Avoid medical jargon. Add brief health advice where relevant.
-
-Lab Report:
-${text}`
-                }
-              ]
-            }
-          ]
-        })
+                  text: `Explain this lab report in simple language for a common person:\n${text}`,
+                },
+              ],
+            },
+          ],
+        }),
       }
     );
 
@@ -40,10 +42,10 @@ ${text}`
 
     const output =
       data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "No response generated";
+      "No response from Gemini";
 
     res.status(200).json({ result: output });
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong" });
+    res.status(500).json({ error: error.message });
   }
 }
